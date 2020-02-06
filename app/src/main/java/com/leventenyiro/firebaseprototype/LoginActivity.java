@@ -32,7 +32,6 @@ public class LoginActivity extends AppCompatActivity {
     private EditText inputUsernameEmail, inputPassword;
     private Button btnLogin, btnReg;
     private FirebaseAuth mAuth;
-    private String email;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -52,41 +51,18 @@ public class LoginActivity extends AppCompatActivity {
                     ref.orderByChild("username").equalTo(inputUsernameEmail.getText().toString()).addListenerForSingleValueEvent(new ValueEventListener() {
                         @Override
                         public void onDataChange(@NonNull DataSnapshot dataSnapshot) {
-                            for (DataSnapshot snapshot : dataSnapshot.getChildren()) {
-                                if (snapshot.getChildrenCount() == 1)
-                                    email = String.valueOf(snapshot.child("email").getValue());
-                                else
-                                    email = inputUsernameEmail.getText().toString();
-                                System.out.println(snapshot.child("email").getValue());
+                            if (dataSnapshot.exists()) {
+                                for (DataSnapshot snapshot : dataSnapshot.getChildren()) {
+                                    if (dataSnapshot.getChildrenCount() == 1)
+                                        login(String.valueOf(snapshot.child("email").getValue()));
+                                }
                             }
+                            else
+                                login(inputUsernameEmail.getText().toString());
                         }
                         @Override
                         public void onCancelled(@NonNull DatabaseError databaseError) { }
                     });
-                    Toast.makeText(LoginActivity.this, , Toast.LENGTH_SHORT).show();
-                    mAuth.signInWithEmailAndPassword(inputUsernameEmail.getText().toString(), inputPassword.getText().toString())
-                            .addOnCompleteListener(LoginActivity.this, new OnCompleteListener<AuthResult>() {
-                                @Override
-                                public void onComplete(@NonNull Task<AuthResult> task) {
-                                    if (task.isSuccessful()) {
-                                        FirebaseUser user = mAuth.getCurrentUser();
-                                        if (!user.isEmailVerified()) {
-                                            user.sendEmailVerification().addOnCompleteListener(new OnCompleteListener<Void>() {
-                                                @Override
-                                                public void onComplete(@NonNull Task<Void> task) {
-                                                    Toast.makeText(LoginActivity.this, "Erősítsd meg az emailed!", Toast.LENGTH_SHORT).show();
-                                                }
-                                            });
-                                        }
-                                        else {
-                                            Toast.makeText(LoginActivity.this, "Be vagy jelentkezve!", Toast.LENGTH_SHORT).show();
-                                        }
-                                    }
-                                    else {
-                                        Toast.makeText(LoginActivity.this, "Hibás bejelentkezési adatok!", Toast.LENGTH_SHORT).show();
-                                    }
-                                }
-                            });
                 }
             }
         });
@@ -106,5 +82,31 @@ public class LoginActivity extends AppCompatActivity {
         btnLogin = findViewById(R.id.btnLogin);
         btnReg = findViewById(R.id.btnReg);
         mAuth = FirebaseAuth.getInstance();
+    }
+
+    private void login(String email) {
+        mAuth.signInWithEmailAndPassword(email, inputPassword.getText().toString())
+                .addOnCompleteListener(LoginActivity.this, new OnCompleteListener<AuthResult>() {
+                    @Override
+                    public void onComplete(@NonNull Task<AuthResult> task) {
+                        if (task.isSuccessful()) {
+                            FirebaseUser user = mAuth.getCurrentUser();
+                            if (!user.isEmailVerified()) {
+                                user.sendEmailVerification().addOnCompleteListener(new OnCompleteListener<Void>() {
+                                    @Override
+                                    public void onComplete(@NonNull Task<Void> task) {
+                                        Toast.makeText(LoginActivity.this, "Erősítsd meg az emailed!", Toast.LENGTH_SHORT).show();
+                                    }
+                                });
+                            }
+                            else {
+                                Toast.makeText(LoginActivity.this, "Be vagy jelentkezve!", Toast.LENGTH_SHORT).show();
+                            }
+                        }
+                        else {
+                            Toast.makeText(LoginActivity.this, "Hibás bejelentkezési adatok!", Toast.LENGTH_SHORT).show();
+                        }
+                    }
+                });
     }
 }
