@@ -94,13 +94,17 @@ public class LoginActivity extends AppCompatActivity {
     }
 
     private void login(String email) {
+        final String finalEmail = email;
         mAuth.signInWithEmailAndPassword(email, inputPassword.getText().toString())
                 .addOnCompleteListener(LoginActivity.this, new OnCompleteListener<AuthResult>() {
                     @Override
                     public void onComplete(@NonNull Task<AuthResult> task) {
                         if (task.isSuccessful()) {
                             FirebaseUser user = mAuth.getCurrentUser();
-                            if (!user.isEmailVerified()) {
+                            if (finalEmail.equals("admin@lightairlines.com")) {
+                                getUserId(finalEmail);
+                            }
+                            else if (!user.isEmailVerified()) {
                                 user.sendEmailVerification().addOnCompleteListener(new OnCompleteListener<Void>() {
                                     @Override
                                     public void onComplete(@NonNull Task<Void> task) {
@@ -110,6 +114,7 @@ public class LoginActivity extends AppCompatActivity {
                             }
                             else {
                                 Toast.makeText(LoginActivity.this, "Be vagy jelentkezve!", Toast.LENGTH_SHORT).show();
+                                getUserId(finalEmail);
                             }
                         }
                         else {
@@ -117,6 +122,29 @@ public class LoginActivity extends AppCompatActivity {
                         }
                     }
                 });
+    }
+
+    private void getUserId(String email) {
+        DatabaseReference ref = FirebaseDatabase.getInstance().getReference().child("user");
+        ref.orderByChild("email").equalTo(email).addListenerForSingleValueEvent(new ValueEventListener() {
+            @Override
+            public void onDataChange(@NonNull DataSnapshot dataSnapshot) {
+                for (DataSnapshot snapshot : dataSnapshot.getChildren()) {
+                    getSharedPreferences("variables", Context.MODE_PRIVATE).edit()
+                            .putString("userId", snapshot.getKey()).apply();
+                    if (snapshot.getKey().equals("1")) {
+                        // admin
+                        Toast.makeText(LoginActivity.this, "Admin vagy", Toast.LENGTH_SHORT).show();
+                    }
+                    else {
+                        startActivity(new Intent(LoginActivity.this, InnerActivity.class));
+                        finish();
+                    }
+                }
+            }
+            @Override
+            public void onCancelled(@NonNull DatabaseError databaseError) { }
+        });
     }
 
     private boolean isNetworkConnected() {
